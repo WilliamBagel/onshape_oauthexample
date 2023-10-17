@@ -35,7 +35,6 @@ import {
     BTGlobalTreeNodesInfo,
     BTGlobalTreeNodesInfoFromJSON,
     BTInsertableInfo,
-    BTInsertableInfoToJSON,
     BTInsertablesListResponse,
     BTInsertablesListResponseFromJSON,
     BTMEnumOption592,
@@ -1070,20 +1069,16 @@ export class App extends BaseApp {
             actionMenu.style.top = String(rect.bottom) + 'px';
             actionMenu.style.width = String(actionMenuWidth) + 'px';
             actionMenu.style.maxWidth = String(Math.max(200, rect.width)) + 'px';
+            
             const actionMenuDiv = actionMenu.firstChild as HTMLDivElement;
 
             //Move actionMenu into view
             actionMenu.style.display = 'block';
             const actionMenuRect = actionMenuDiv.getBoundingClientRect();
-            if (actionMenuRect.left < 0) actionMenu.style.left = '0px';
-            if (actionMenuRect.right > document.body.clientWidth)
-                actionMenu.style.left =
-                    String(document.body.clientWidth - actionMenuDiv.clientWidth - 2) +
-                    'px';
-            if (actionMenuRect.top < 0) actionMenu.style.top = '0px';
-            if (actionMenuRect.bottom > document.body.clientHeight)
-                actionMenu.style.top =
-                    String(document.body.clientHeight - actionMenuRect.height - 2) + 'px';
+            if(actionMenuRect.left < 0)actionMenu.style.left = "0px";
+            if(actionMenuRect.right > document.body.clientWidth)actionMenu.style.left = String(document.body.clientWidth-actionMenuDiv.clientWidth-2) + "px";
+            if(actionMenuRect.top < 0)actionMenu.style.top = "0px";
+            if(actionMenuRect.bottom > document.body.clientHeight)actionMenu.style.top = String(document.body.clientHeight-actionMenuRect.height-2) + "px";
             actionMenu.style.display = 'none';
             //Prune seperators
             actionMenuDiv.childNodes.forEach((elem) => {
@@ -1096,8 +1091,6 @@ export class App extends BaseApp {
             });
 
             const backgroundMenu = item === undefined || item === null;
-
-            let availableOptions = 0;
 
             for (const id in this.actionMenuOptions) {
                 const option = this.actionMenuOptions[id] as actionMenuOptionInfo;
@@ -1183,18 +1176,32 @@ export class App extends BaseApp {
                     }
                 }
 
-                availableOptions++;
-
+                const updateActionMenuInputOptions = (
+                    id: string,
+                    list: Array<{ id: string; label: string }>
+                ) => {
+                    const inputSelectElement = document.getElementById(id);
+                    if (inputSelectElement === undefined || inputSelectElement === null)
+                        return;
+                    inputSelectElement.innerHTML = '';
+                    inputSelectElement.appendChild(
+                        createDocumentElement('option', { innerHTML: 'Select One' })
+                    );
+                    list.forEach((input) => {
+                        const inputElementOption = createDocumentElement('option', {
+                            value: input.id,
+                            innerHTML: input.label,
+                        });
+                        inputElementOption.innerHTML = input.label;
+                        inputSelectElement.appendChild(inputElementOption);
+                    });
+                };
                 switch (id) {
                     case 'NAME': {
                         if (item.jsonType === 'magic') {
-                            //add random whitespaces so the x isn't covering the name
-                            this.setElemText(
-                                optionId,
-                                this.magicInfo[item.id].label + ' '
-                            );
+                            this.setElemText(optionId, this.magicInfo[item.id].label);
                         } else {
-                            this.setElemText(optionId, item.name + ' ');
+                            this.setElemText(optionId, item.name);
                         }
                         break;
                     }
@@ -1308,7 +1315,6 @@ export class App extends BaseApp {
                     }
                     case 'CREATELIB': {
                         optionElement.onclick = () => {
-                            this.hideActionMenuOptionInputs();
                             const inputElement = document.getElementById(
                                 optionId + '_lib-name'
                             ) as HTMLInputElement;
@@ -1332,7 +1338,6 @@ export class App extends BaseApp {
                     }
                     case 'CREATEPROXY': {
                         optionElement.onclick = () => {
-                            this.hideActionMenuOptionInputs();
                             const inputProxyElement = document.getElementById(
                                 optionId + '_proxy-name'
                             ) as HTMLInputElement;
@@ -1347,11 +1352,7 @@ export class App extends BaseApp {
                                 let libraryId: string;
                                 let parent: BTGlobalTreeProxyInfo;
                                 if (backgroundMenu) {
-                                    if (parentNode.jsonType === 'proxy-library') {
-                                        libraryId = parentNode.id;
-                                    } else if (parentNode.jsonType === 'proxy-folder') {
-                                        libraryId = parentNode.projectId;
-                                    }
+                                    libraryId = parentNode.projectId;
                                     parent = parentNode;
                                 } else {
                                     if (item.jsonType === 'proxy-library') {
@@ -1398,7 +1399,6 @@ export class App extends BaseApp {
                     }
                     case 'ADDLIBDOC': {
                         optionElement.onclick = () => {
-                            this.hideActionMenuOptionInputs();
                             const inputLibElement = document.getElementById(
                                 optionId + '_lib-name'
                             ) as HTMLInputElement;
@@ -1412,7 +1412,7 @@ export class App extends BaseApp {
                                         id: library.id,
                                         label: library.name,
                                     });
-                                    this.updateActionMenuInputOptions(
+                                    updateActionMenuInputOptions(
                                         inputLibElement.id,
                                         libraryOptions
                                     );
@@ -1453,7 +1453,6 @@ export class App extends BaseApp {
                     }
                     case 'ADDPROXYDOC': {
                         optionElement.onclick = () => {
-                            this.hideActionMenuOptionInputs();
                             const inputLibElement = document.getElementById(
                                 optionId + '_lib-name'
                             ) as HTMLInputElement;
@@ -1470,7 +1469,7 @@ export class App extends BaseApp {
                                         id: library.id,
                                         label: library.name,
                                     });
-                                    this.updateActionMenuInputOptions(
+                                    updateActionMenuInputOptions(
                                         inputLibElement.id,
                                         libraryOptions
                                     );
@@ -1495,7 +1494,7 @@ export class App extends BaseApp {
                                                 label: descendant.name,
                                             });
                                         });
-                                        this.updateActionMenuInputOptions(
+                                        updateActionMenuInputOptions(
                                             inputProxyElement.id,
                                             folderOptions
                                         );
@@ -1559,7 +1558,7 @@ export class App extends BaseApp {
                     }
                     case 'DELPROXY': {
                         optionElement.onclick = () => {
-                            if (item.treeHref === undefined || item.treeHref === item.projectId) {
+                            if (item.treeHref === undefined) {
                                 //item's parent is library
                                 this.libraries
                                     .removeNodeFromProxyLibrary(
@@ -1582,7 +1581,7 @@ export class App extends BaseApp {
                                                     res.library,
                                                     {
                                                         jsonType: 'proxy-folder',
-                                                        id: item.treeHref,
+                                                        name: item.treeHref,
                                                     }
                                                 )
                                                 .then(() => {
@@ -1608,12 +1607,12 @@ export class App extends BaseApp {
                 }
 
                 if (id !== 'NAME') {
-                    // optionElement.parentElement.onmouseover = () => {
-                    //     optionElement.parentElement.className = 'context-menu-item hover';
-                    // };
-                    // optionElement.parentElement.onmouseleave = () => {
-                    //     optionElement.parentElement.className = 'context-menu-item';
-                    // };
+                    optionElement.parentElement.onmouseover = () => {
+                        optionElement.parentElement.className = 'context-menu-item hover';
+                    };
+                    optionElement.parentElement.onmouseleave = () => {
+                        optionElement.parentElement.className = 'context-menu-item';
+                    };
                     //Add seperators back
                     actionMenuDiv.insertBefore(
                         createDocumentElement('li', {
@@ -1623,13 +1622,9 @@ export class App extends BaseApp {
                     );
                 }
             }
-            // document.getElementById('docactionmenu_close').onclick = () => {
-            //     this.hideActionMenu();
-            // };
-
-            document.getElementById('docactionmenu_no-options').style.display =
-                availableOptions > 0 ? 'none' : 'flex';
-
+            document.getElementById('docactionmenu_close').onclick = () => {
+                this.hideActionMenuOptionInputs();
+            };
             if (
                 actionMenuDiv.lastChild['className'] ===
                 'context-menu-item context-menu-separator not-selectable'
@@ -1639,25 +1634,6 @@ export class App extends BaseApp {
 
             actionMenu.style.display = 'block';
         }
-    }
-    public updateActionMenuInputOptions(
-        id: string,
-        list: Array<{ id: string; label: string }>
-    ): void {
-        const inputSelectElement = document.getElementById(id);
-        if (inputSelectElement === undefined || inputSelectElement === null) return;
-        inputSelectElement.innerHTML = '';
-        inputSelectElement.appendChild(
-            createDocumentElement('option', { innerHTML: 'Select One' })
-        );
-        list.forEach((input) => {
-            const inputElementOption = createDocumentElement('option', {
-                value: input.id,
-                innerHTML: input.label,
-            });
-            inputElementOption.innerHTML = input.label;
-            inputSelectElement.appendChild(inputElementOption);
-        });
     }
     public hideActionMenu(): void {
         const actionMenu = document.getElementById('docactionmenu');
@@ -1712,7 +1688,7 @@ export class App extends BaseApp {
             textContent: '🞬',
         });
         closeActionMenu.onclick = () => {
-            this.hideActionMenu();
+            this.hideActionMenuOptionInputs();
         };
         actionMenuDiv.appendChild(closeActionMenu);
 
@@ -1721,12 +1697,6 @@ export class App extends BaseApp {
             const actionMenuOptionList = createDocumentElement('li', {
                 class: 'context-menu-item',
             });
-            actionMenuOptionList.onmouseover = () => {
-                actionMenuOptionList.className = 'context-menu-item hover';
-            };
-            actionMenuOptionList.onmouseleave = () => {
-                actionMenuOptionList.className = 'context-menu-item';
-            };
             const actionMenuOptionSpan = createDocumentElement('span', {
                 id: 'docactionmenu_' + option.name,
                 textContent: option.label,
@@ -1795,8 +1765,6 @@ export class App extends BaseApp {
                     actionMenuOptionList.style.overflow = 'hidden';
                     actionMenuOptionList.style.paddingRight = '2px';
                     actionMenuOptionSpan.style.cssText = 'text-wrap:nowrap';
-                    actionMenuOptionSpan.onmouseover = () => {};
-                    actionMenuOptionSpan.onmouseleave = () => {};
                     break;
                 }
                 case '': {
@@ -1805,14 +1773,6 @@ export class App extends BaseApp {
             }
             actionMenuDiv.appendChild(actionMenuOptionList);
         }
-
-        const noOptionsList = createDocumentElement('li', {
-            id: 'docactionmenu_no-options',
-            class: 'context-menu-item',
-            textContent: 'No available options  ',
-        });
-        actionMenuDiv.appendChild(noOptionsList);
-
         actionMenuMainDiv.appendChild(actionMenuDiv);
 
         parent.appendChild(actionMenuMainDiv);
@@ -1858,7 +1818,7 @@ export class App extends BaseApp {
     }
     /**
      *
-     * 1. Examine the document and determine if we can insert without prompting the user
+     * 1. Examine the document an determine if we can insert without prompting the user
      *    a. There is a parts studio tab with the same name as the main document with a single object on that tab
      *       (or one object named the same as the main document) and no configuration options for that object.
      *       If so, insert it
@@ -1949,12 +1909,10 @@ export class App extends BaseApp {
                             insertType === element.elementType)
                     ) {
                         let elementName = (element.elementName ?? '').toUpperCase();
-                        let elementPartName = (element.partName ?? '').toUpperCase();
 
                         if (
-                            elementName !== 'DO NOT USE ICON' &&
-                            elementPartName.indexOf('LEGACY PART') < 0 &&
-                            elementName.indexOf('LEGACY PART') < 0 //is this necessary?
+                            elementName.indexOf('DO NOT USE') < 0 &&
+                            elementName.indexOf('LEGACY PART') < 0
                         ) {
                             // We want to save it
                             insertMap[element.id] = element;
@@ -1965,9 +1923,7 @@ export class App extends BaseApp {
                         if (
                             element.parentId !== undefined &&
                             element.parentId !== null &&
-                            (elementPartName.indexOf('DO NOT USE THESE PARTS') >= 0 ||
-                                elementPartName.indexOf('PARTS DO NOT USE') >= 0 ||
-                                elementPartName.indexOf('DO NOT USE PARTS') >= 0)
+                            elementName.indexOf('DO NOT USE THESE PARTS') >= 0
                         ) {
                             dropParents[element.parentId] = true;
                         }
@@ -2060,17 +2016,15 @@ export class App extends BaseApp {
                     item,
                     this.targetDocumentElementInfo.elementType
                 ).then((res) => {
-                    const configurableItems: BTInsertableInfo[] = [];
-                    res.forEach((item) => {
+                    if (res.length === 1) {
                         if (
                             res[0].configurationParameters !== undefined &&
                             res[0].configurationParameters !== null
                         ) {
-                            configurableItems.push(item);
+                            resolve(res);
                         }
-                    });
-                    if (configurableItems.length > 0) {
-                        resolve(configurableItems);
+                    } else {
+                        resolve(res);
                     }
                     resolve(undefined);
                 });
@@ -3018,7 +2972,7 @@ export class App extends BaseApp {
                     href: undefined,
                     items: res,
                 };
-                this.ProcessNodeResults(recentNode, undefined, false);
+                this.ProcessNodeResults(recentNode, undefined, true);
             });
     }
     /**
@@ -3140,11 +3094,11 @@ export class App extends BaseApp {
                 break;
             }
             case 'magic': {
-                if (info.pathToRoot[0].id === 'RI') {
+                if (info.pathToRoot[0].id == 'RI') {
                     this.processRecentlyInsertedNode(parseInt(info.next));
-                } else if (info.pathToRoot[0].id === 'FV') {
+                } else if (info.pathToRoot[0].id == 'FV') {
                     this.processFavoritedNode(parseInt(info.next));
-                } else if (info.pathToRoot[0].id === 'LI') {
+                } else if (info.pathToRoot[0].id == 'LI') {
                     this.processLibrariesNode(parseInt(info.next));
                 }
                 break;
