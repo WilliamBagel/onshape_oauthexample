@@ -252,74 +252,6 @@ export class Preferences {
         return this.setBTGArray('last_known_location', location, libInfo);
     }
 
-    public translateHomeItemsToBTGlobalTreeNodeInfo(
-      items: { [item: string]: magicIconInfo | BTGlobalTreeNodeInfo }
-    ): Array<BTGlobalTreeNodeInfo>{
-      const itemInfoArray: BTGlobalTreeNodeInfo[] = [];
-      let itemInfo: magicIconInfo | BTGlobalTreeNodeInfo;
-      for(let id in items){
-        itemInfo = items[id];
-        if(itemInfo['jsonType'] !== undefined && itemInfo['jsonType'] !== null)itemInfoArray.push(itemInfo as BTGlobalTreeNodeInfo)
-        itemInfo = itemInfo as magicIconInfo;
-        itemInfoArray.push({
-          jsonType: "magicHome",
-          id,
-          name: itemInfo.label,
-          description: itemInfo.icon
-        })
-      }
-      return itemInfoArray
-    }
-    public translateHomeItemsFromBTGlobalTreeNodeInfo(
-      items: Array<BTGlobalTreeNodeInfo>
-    ): { [item: string]: magicIconInfo | BTGlobalTreeNodeInfo}{
-      const homeObject: { [item: string]: magicIconInfo | BTGlobalTreeNodeInfo } = {};
-      items.forEach((item)=>{
-        if(item.jsonType === 'magicHome'){
-          homeObject[item.id] = {
-            label: item.name,
-            icon: item.description as OnshapeSVGIcon
-          }
-        }else{
-          homeObject[item.jsonType] = item;
-        }
-      })
-      return homeObject;
-    }
-    /**
-     * Adds an home item to the home menu
-     * @param item item to add
-     * @returns Success/failure indicator
-     */
-    public addHomeItem(
-        item: BTGlobalTreeNodeInfo | magicIconInfo,
-        libInfo: BTGlobalTreeProxyInfo = this.userPreferencesInfo
-    ): Promise<boolean> {
-        return new Promise((resolve, reject) => {
-            const BTItem = this.translateHomeItemsToBTGlobalTreeNodeInfo({" ":item})[0];
-            this.getBTGArray('home', libInfo).then((homeList) => {
-                const newHomeList: BTGlobalTreeNodeInfo[] = [];
-                let homeItem: BTGlobalTreeNodeMagicDataInfo;
-                let duplicate: BTGlobalTreeNodeMagicDataInfo;
-                //Iterate favoriteList and don't add duplicates to new list
-                homeList.unshift(BTItem);
-                for (let i in homeList) {
-                    homeItem = homeList[i];
-                    duplicate = newHomeList.find(
-                        (element: BTGlobalTreeNodeMagicDataInfo) => {
-                            return (
-                                element.id === homeItem.id &&
-                                element.jsonType === homeItem.jsonType
-                            );
-                        }
-                    );
-                    if (duplicate === undefined) newHomeList.push(homeItem);
-                }
-                resolve(this.setHome(homeList));
-            });
-        });
-    }
-
     /**
      * Set an arbitrary list of entries for the application to use as the home
      * @param items Array of items to store
@@ -352,7 +284,6 @@ export class Preferences {
         libInfo: BTGlobalTreeProxyInfo = this.userPreferencesInfo
     ): Promise<boolean> {
         return new Promise((resolve, _reject) => {
-            console.log(item);
             this.getAllFavorited().then((favoriteList: BTGlobalTreeNodeInfo[]) => {
                 const newFavoriteList: BTGlobalTreeNodeInfo[] = [];
                 let favoriteItem: BTGlobalTreeNodeMagicDataInfo;
@@ -389,7 +320,6 @@ export class Preferences {
         libInfo: BTGlobalTreeProxyInfo = this.userPreferencesInfo
     ): Promise<boolean> {
         return new Promise((resolve, _reject) => {
-            console.log(item);
             this.getAllLibraries().then((libraryList: BTGlobalTreeNodeInfo[]) => {
                 const newLibraryList: BTGlobalTreeNodeInfo[] = [];
                 let libraryItem: BTGlobalTreeNodeMagicDataInfo;
@@ -426,7 +356,6 @@ export class Preferences {
         libInfo: BTGlobalTreeProxyInfo = this.userPreferencesInfo
     ): Promise<boolean> {
         return new Promise((resolve, _reject) => {
-            console.log(item);
             this.getAllFavorited().then((favoriteList: BTGlobalTreeNodeInfo[]) => {
                 const newFavoriteList: BTGlobalTreeNodeInfo[] = [];
                 let favoriteItem: BTGlobalTreeNodeMagicDataInfo;
@@ -456,7 +385,6 @@ export class Preferences {
         libInfo: BTGlobalTreeProxyInfo = this.userPreferencesInfo
     ): Promise<boolean> {
         return new Promise((resolve, _reject) => {
-            console.log(item);
             this.getAllLibraries().then((libraryList: BTGlobalTreeNodeInfo[]) => {
                 const newLibraryList: BTGlobalTreeNodeInfo[] = [];
                 let libraryItem: BTGlobalTreeNodeMagicDataInfo;
@@ -486,7 +414,6 @@ export class Preferences {
         libInfo: BTGlobalTreeProxyInfo = this.userPreferencesInfo
     ): Promise<boolean> {
         return new Promise((resolve, _reject) => {
-            console.log(item);
             this.getAllRecentlyInserted().then((recentList: BTGlobalTreeNodeInfo[]) => {
                 const newRecentList: BTGlobalTreeNodeInfo[] = [];
                 let recentItem: BTGlobalTreeNodeMagicDataInfo;
@@ -615,6 +542,10 @@ export class Preferences {
         libInfo: BTGlobalTreeProxyInfo
     ): Promise<boolean> {
         return new Promise((resolve, _reject) => {
+            console.log('setting btg array ' + pref_name, array, 'in lib', libInfo);
+            console.groupCollapsed('trace');
+            console.trace();
+            console.groupEnd();
             this.existsEntry(pref_name, libInfo)
                 .then((res) => {
                     if (res) {
@@ -681,7 +612,10 @@ export class Preferences {
                 })
                 .then((res) => {
                     console.log(res.tree);
-                    console.log(pref_name);
+                    console.log(pref_name, libInfo);
+                    console.groupCollapsed('trace');
+                    console.trace();
+                    console.groupEnd();
                     if (Array.isArray(pref_name)) {
                         const pref_names = pref_name;
                         let allResults: {
@@ -704,7 +638,6 @@ export class Preferences {
                         const result: Array<BTGlobalTreeNodeInfo> = [];
                         pref_name = pref_name as string;
                         for (let btg_json of res.tree[pref_name]) {
-                            console.log(pref_name);
                             result.push(
                                 BTGlobalTreeNodeMagicDataInfoJSONTyped(btg_json, false)
                             );
@@ -859,7 +792,7 @@ export class Preferences {
                         reject(err);
                     });
             } else {
-                // The user preferences document did not exists, so make a new one and return the
+                // The user preferences document does not exist, so make a new one and return the
                 // BTG info for the newly created document.
                 this.onshape.documentApi
                     .createDocument({
@@ -873,16 +806,14 @@ export class Preferences {
                         console.log(
                             'Created new preferences document since it did not exist.'
                         );
-
                         this.userPreferencesInfo = BTGlobalTreeProxyInfoJSONTyped(
                             {
                                 id: res.id,
-                                wvmid: res.id,
+                                wvmid: res.defaultWorkspace.id,
                                 wvm: GetAssociativeDataWvmEnum['w'],
                             },
                             true
                         );
-
                         resolve(this.userPreferencesInfo);
                     })
                     .catch((err) => {
